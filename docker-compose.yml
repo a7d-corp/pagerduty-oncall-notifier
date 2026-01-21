@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  notifier:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: pagerduty-oncall-notifier
+    restart: unless-stopped
+    environment:
+      # PagerDuty Configuration
+      - PD_API_TOKEN=${PD_API_TOKEN}
+      - PD_SCHEDULE_ID=${PD_SCHEDULE_ID}
+      - PD_USER_ID=${PD_USER_ID}
+      - CHECK_INTERVAL=${CHECK_INTERVAL:-300}
+      - ADVANCE_NOTIFICATION_TIME=${ADVANCE_NOTIFICATION_TIME}
+      - STATE_FILE_PATH=${STATE_FILE_PATH:-/data/state.json}
+      # Notification Backend Selection (webhook or ntfy)
+      - NOTIFICATION_BACKEND=${NOTIFICATION_BACKEND}
+      # Webhook Backend (required when NOTIFICATION_BACKEND=webhook)
+      - NOTIFICATION_WEBHOOK_URL=${NOTIFICATION_WEBHOOK_URL}
+      # Ntfy Backend (required when NOTIFICATION_BACKEND=ntfy)
+      - NTFY_SERVER_URL=${NTFY_SERVER_URL}
+      - NTFY_TOPIC=${NTFY_TOPIC}
+      - NTFY_API_KEY=${NTFY_API_KEY}
+    volumes:
+      - ./data:/data
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"

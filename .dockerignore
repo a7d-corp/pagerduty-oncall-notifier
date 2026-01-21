@@ -1,0 +1,11 @@
+.git
+.gitignore
+*.md
+.dockerignore
+docker-compose.yml
+Dockerfile
+.vscode
+.idea
+*.swp
+*.swo
+*~
