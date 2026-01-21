@@ -9,10 +9,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/shw/pagerduty-oncall-notifier/internal/config"
-	"github.com/shw/pagerduty-oncall-notifier/internal/notifier"
-	"github.com/shw/pagerduty-oncall-notifier/internal/pagerduty"
-	"github.com/shw/pagerduty-oncall-notifier/internal/state"
+	"github.com/a7d-corp/pagerduty-oncall-notifier/internal/config"
+	"github.com/a7d-corp/pagerduty-oncall-notifier/internal/notifier"
+	"github.com/a7d-corp/pagerduty-oncall-notifier/internal/pagerduty"
+	"github.com/a7d-corp/pagerduty-oncall-notifier/internal/state"
 )
 
 func main() {

@@ -1,4 +1,4 @@
-module github.com/shw/pagerduty-oncall-notifier
+module github.com/a7d-corp/pagerduty-oncall-notifier
 
 go 1.25.6
 
