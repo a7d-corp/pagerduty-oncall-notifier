@@ -7,7 +7,7 @@ A lightweight Go-based service that monitors PagerDuty on-call rotations and sen
 - Polls PagerDuty API at configurable intervals (default: 5 minutes)
 - Detects when your on-call shift starts (transition from not-on-call to on-call)
 - **NEW**: Configurable advance notifications before your shift starts (e.g., notify 2 hours in advance)
-- Supports multiple notification backends: webhook and ntfy (self-hosted)
+- Supports multiple notification backends: webhook, ntfy (self-hosted), and Pushover
 - Optional authentication for ntfy servers (API key)
 - Persists state to avoid duplicate notifications
 - Runs in a Docker container with minimal resource usage
@@ -49,7 +49,7 @@ The application consists of:
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `NOTIFICATION_BACKEND` | Yes | - | Backend to use: `webhook` or `ntfy` |
+| `NOTIFICATION_BACKEND` | Yes | - | Backend to use: `webhook`, `ntfy`, or `pushover` |
 
 #### Webhook Backend (when `NOTIFICATION_BACKEND=webhook`)
 
@@ -64,6 +64,15 @@ The application consists of:
 | `NTFY_SERVER_URL` | Yes | - | Base URL of your self-hosted ntfy server (e.g., `https://ntfy.example.com`) |
 | `NTFY_TOPIC` | Yes | - | Topic name to publish to |
 | `NTFY_API_KEY` | No | - | API key for authentication (optional, if server requires auth) |
+
+#### Pushover Backend (when `NOTIFICATION_BACKEND=pushover`)
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `PUSHOVER_APP_TOKEN` | Yes | - | Application/API token from your Pushover account |
+| `PUSHOVER_USER_KEY` | Yes | - | Pushover user or group key that should receive notifications |
+| `PUSHOVER_DEVICE` | No | - | Optional device name to target a single device |
+| `PUSHOVER_SOUND` | No | - | Optional sound override (e.g., `siren`, `magic`) |
 
 ### Finding Your PagerDuty IDs
 
@@ -118,6 +127,21 @@ ADVANCE_NOTIFICATION_TIME=2h
 
 **Note**: `NTFY_API_KEY` is optional. Only include it if your ntfy server requires authentication.
 
+#### Pushover Backend
+
+```bash
+PD_API_TOKEN=your_pagerduty_api_token
+PD_SCHEDULE_ID=your_schedule_id
+PD_USER_ID=your_user_id
+NOTIFICATION_BACKEND=pushover
+PUSHOVER_APP_TOKEN=your_pushover_app_token
+PUSHOVER_USER_KEY=your_pushover_user_key
+PUSHOVER_DEVICE=optional_device_name
+PUSHOVER_SOUND=optional_sound
+CHECK_INTERVAL=300
+ADVANCE_NOTIFICATION_TIME=2h
+```
+
 2. Build and run:
 
 ```bash
@@ -135,6 +159,16 @@ docker-compose logs -f
 ```bash
 docker-compose down
 ```
+
+### CLI Help
+
+Run the binary with the help flag to see available options and a summary of required environment variables:
+
+```bash
+./notifier -h
+```
+
+When using `go run`, pass the flag after `--` (for example `go run ./cmd/notifier -- -h`).
 
 ### Using Docker Directly
 
@@ -180,6 +214,26 @@ docker run -d \
   pagerduty-oncall-notifier
 ```
 
+4. Or run with Pushover backend:
+
+```bash
+docker run -d \
+  --name pagerduty-oncall-notifier \
+  --restart unless-stopped \
+  -e PD_API_TOKEN=your_token \
+  -e PD_SCHEDULE_ID=your_schedule_id \
+  -e PD_USER_ID=your_user_id \
+  -e NOTIFICATION_BACKEND=pushover \
+  -e PUSHOVER_APP_TOKEN=your_pushover_app_token \
+  -e PUSHOVER_USER_KEY=your_pushover_user_key \
+  -e PUSHOVER_DEVICE=optional_device_name \
+  -e PUSHOVER_SOUND=optional_sound \
+  -e CHECK_INTERVAL=300 \
+  -e ADVANCE_NOTIFICATION_TIME=2h \
+  -v $(pwd)/data:/data \
+  pagerduty-oncall-notifier
+```
+
 ### Running Locally (Development)
 
 1. Install dependencies:
@@ -211,6 +265,22 @@ export NOTIFICATION_BACKEND=ntfy
 export NTFY_SERVER_URL=https://ntfy.example.com
 export NTFY_TOPIC=your-topic-name
 export NTFY_API_KEY=your_api_key_optional
+export CHECK_INTERVAL=300
+export ADVANCE_NOTIFICATION_TIME=2h
+export STATE_FILE_PATH=./data/state.json
+```
+
+Or set environment variables (Pushover backend):
+
+```bash
+export PD_API_TOKEN=your_token
+export PD_SCHEDULE_ID=your_schedule_id
+export PD_USER_ID=your_user_id
+export NOTIFICATION_BACKEND=pushover
+export PUSHOVER_APP_TOKEN=your_pushover_app_token
+export PUSHOVER_USER_KEY=your_pushover_user_key
+export PUSHOVER_DEVICE=optional_device_name
+export PUSHOVER_SOUND=optional_sound
 export CHECK_INTERVAL=300
 export ADVANCE_NOTIFICATION_TIME=2h
 export STATE_FILE_PATH=./data/state.json
@@ -275,6 +345,26 @@ The notification will appear on any device subscribed to the topic. For more inf
 #### Ntfy Authentication
 
 If your self-hosted ntfy server requires authentication, you can provide an API key via the `NTFY_API_KEY` environment variable. The notifier will include this as a Bearer token in the `Authorization` header. For details on setting up access tokens, see the [ntfy authentication documentation](https://docs.ntfy.sh/publish/#access-tokens).
+
+### Pushover Backend
+
+When your shift starts, the notifier issues a POST to the [Pushover message API](https://pushover.net/api) with the following form data:
+
+- `token`: Your application token (`PUSHOVER_APP_TOKEN`)
+- `user`: Your user or group key (`PUSHOVER_USER_KEY`)
+- `title`: "PagerDuty On-Call Shift Started"
+- `message`: `🚨 Your PagerDuty on-call shift has started!`
+- `priority`: `1` (high priority)
+- `timestamp`: Current UTC timestamp
+- `sound` and `device` if you configured overrides
+
+Advance notifications send the same API request with:
+
+- `title`: "PagerDuty On-Call Shift Upcoming"
+- Dynamic `message` describing the time remaining
+- `priority`: `0` (normal priority)
+
+Errors returned by the API (non-2xx statuses) are logged, and the response body is included to aid debugging.
 
 ## State Persistence
 

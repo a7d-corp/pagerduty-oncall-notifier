@@ -12,23 +12,28 @@ import (
 type NotificationBackend string
 
 const (
-	BackendWebhook NotificationBackend = "webhook"
-	BackendNtfy    NotificationBackend = "ntfy"
+	BackendWebhook  NotificationBackend = "webhook"
+	BackendNtfy     NotificationBackend = "ntfy"
+	BackendPushover NotificationBackend = "pushover"
 )
 
 // Config holds all configuration for the application
 type Config struct {
-	PagerDutyAPIToken      string
-	PagerDutyScheduleID    string
-	PagerDutyUserID        string
-	CheckInterval          time.Duration
+	PagerDutyAPIToken       string
+	PagerDutyScheduleID     string
+	PagerDutyUserID         string
+	CheckInterval           time.Duration
 	AdvanceNotificationTime time.Duration
-	NotificationBackend   NotificationBackend
-	NotificationWebhookURL string
-	NtfyServerURL         string
-	NtfyTopic             string
-	NtfyAPIKey            string
-	StateFilePath         string
+	NotificationBackend     NotificationBackend
+	NotificationWebhookURL  string
+	NtfyServerURL           string
+	NtfyTopic               string
+	NtfyAPIKey              string
+	PushoverAppToken        string
+	PushoverUserKey         string
+	PushoverDevice          string
+	PushoverSound           string
+	StateFilePath           string
 }
 
 // Load loads configuration from environment variables
@@ -56,11 +61,13 @@ func Load() (*Config, error) {
 	// Required: Notification Backend
 	backendStr := os.Getenv("NOTIFICATION_BACKEND")
 	if backendStr == "" {
-		return nil, fmt.Errorf("NOTIFICATION_BACKEND environment variable is required (must be 'webhook' or 'ntfy')")
+		return nil, fmt.Errorf("NOTIFICATION_BACKEND environment variable is required (must be 'webhook', 'ntfy', or 'pushover')")
 	}
 	cfg.NotificationBackend = NotificationBackend(backendStr)
-	if cfg.NotificationBackend != BackendWebhook && cfg.NotificationBackend != BackendNtfy {
-		return nil, fmt.Errorf("NOTIFICATION_BACKEND must be 'webhook' or 'ntfy', got: %s", backendStr)
+	switch cfg.NotificationBackend {
+	case BackendWebhook, BackendNtfy, BackendPushover:
+	default:
+		return nil, fmt.Errorf("NOTIFICATION_BACKEND must be 'webhook', 'ntfy', or 'pushover', got: %s", backendStr)
 	}
 
 	// Backend-specific configuration
@@ -81,6 +88,17 @@ func Load() (*Config, error) {
 		}
 		// API key is optional for ntfy
 		cfg.NtfyAPIKey = os.Getenv("NTFY_API_KEY")
+	case BackendPushover:
+		cfg.PushoverAppToken = os.Getenv("PUSHOVER_APP_TOKEN")
+		if cfg.PushoverAppToken == "" {
+			return nil, fmt.Errorf("PUSHOVER_APP_TOKEN environment variable is required when using pushover backend")
+		}
+		cfg.PushoverUserKey = os.Getenv("PUSHOVER_USER_KEY")
+		if cfg.PushoverUserKey == "" {
+			return nil, fmt.Errorf("PUSHOVER_USER_KEY environment variable is required when using pushover backend")
+		}
+		cfg.PushoverDevice = os.Getenv("PUSHOVER_DEVICE")
+		cfg.PushoverSound = os.Getenv("PUSHOVER_SOUND")
 	}
 
 	// Optional: Check Interval (default: 300 seconds / 5 minutes)

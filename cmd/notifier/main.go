@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -16,6 +17,30 @@ import (
 )
 
 func main() {
+	flag.Usage = func() {
+		fmt.Fprintf(flag.CommandLine.Output(), "PagerDuty On-Call Notifier\n\n")
+		fmt.Fprintf(flag.CommandLine.Output(), "Usage:\n  notifier [flags]\n\nFlags:\n")
+		flag.PrintDefaults()
+		fmt.Fprintln(flag.CommandLine.Output(), "\nKey environment variables:")
+		fmt.Fprintln(flag.CommandLine.Output(), "  PD_API_TOKEN (required)        PagerDuty REST API token")
+		fmt.Fprintln(flag.CommandLine.Output(), "  PD_SCHEDULE_ID (required)      PagerDuty schedule to monitor")
+		fmt.Fprintln(flag.CommandLine.Output(), "  PD_USER_ID (required)          PagerDuty user expected to be on call")
+		fmt.Fprintln(flag.CommandLine.Output(), "  NOTIFICATION_BACKEND           webhook | ntfy | pushover")
+		fmt.Fprintln(flag.CommandLine.Output(), "  CHECK_INTERVAL                 poll interval in seconds (default 300)")
+		fmt.Fprintln(flag.CommandLine.Output(), "  ADVANCE_NOTIFICATION_TIME      duration before shift for advance alerts")
+		fmt.Fprintln(flag.CommandLine.Output(), "  STATE_FILE_PATH                path for persisted state (default /data/state.json)")
+		fmt.Fprintln(flag.CommandLine.Output(), "\nSee README.md for full configuration details.")
+	}
+
+	help := flag.Bool("help", false, "Show help and exit")
+	shortHelp := flag.Bool("h", false, "Show help and exit")
+	flag.Parse()
+
+	if *help || *shortHelp {
+		flag.Usage()
+		return
+	}
+
 	// Load configuration
 	cfg, err := config.Load()
 	if err != nil {
@@ -119,6 +144,15 @@ func createNotifier(cfg *config.Config) (notifier.Notifier, error) {
 			log.Println("Ntfy authentication enabled")
 		}
 		return notifier.NewNtfyNotifier(cfg.NtfyServerURL, cfg.NtfyTopic, cfg.NtfyAPIKey), nil
+	case config.BackendPushover:
+		log.Println("Using Pushover notifier")
+		if cfg.PushoverDevice != "" {
+			log.Printf("Pushover device targeting enabled: %s", cfg.PushoverDevice)
+		}
+		if cfg.PushoverSound != "" {
+			log.Printf("Pushover sound override: %s", cfg.PushoverSound)
+		}
+		return notifier.NewPushoverNotifier(cfg.PushoverAppToken, cfg.PushoverUserKey, cfg.PushoverDevice, cfg.PushoverSound), nil
 	default:
 		return nil, fmt.Errorf("unsupported notification backend: %s", cfg.NotificationBackend)
 	}
