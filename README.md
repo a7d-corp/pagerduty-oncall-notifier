@@ -160,6 +160,16 @@ docker-compose logs -f
 docker-compose down
 ```
 
+### CLI Help
+
+Run the binary with the help flag to see available options and a summary of required environment variables:
+
+```bash
+./notifier -h
+```
+
+When using `go run`, pass the flag after `--` (for example `go run ./cmd/notifier -- -h`).
+
 ### Using Docker Directly
 
 1. Build the image:
