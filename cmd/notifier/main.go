@@ -119,6 +119,15 @@ func createNotifier(cfg *config.Config) (notifier.Notifier, error) {
 			log.Println("Ntfy authentication enabled")
 		}
 		return notifier.NewNtfyNotifier(cfg.NtfyServerURL, cfg.NtfyTopic, cfg.NtfyAPIKey), nil
+	case config.BackendPushover:
+		log.Println("Using Pushover notifier")
+		if cfg.PushoverDevice != "" {
+			log.Printf("Pushover device targeting enabled: %s", cfg.PushoverDevice)
+		}
+		if cfg.PushoverSound != "" {
+			log.Printf("Pushover sound override: %s", cfg.PushoverSound)
+		}
+		return notifier.NewPushoverNotifier(cfg.PushoverAppToken, cfg.PushoverUserKey, cfg.PushoverDevice, cfg.PushoverSound), nil
 	default:
 		return nil, fmt.Errorf("unsupported notification backend: %s", cfg.NotificationBackend)
 	}
