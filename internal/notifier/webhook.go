@@ -53,6 +53,9 @@ func (w *WebhookNotifier) NotifyWithEvent(event NotificationEvent, shiftStartTim
 			message = "⏰ Your PagerDuty on-call shift starts soon!"
 		}
 		eventType = "oncall_shift_upcoming"
+	case EventShiftEnded:
+		message = "✅ Your PagerDuty on-call shift has ended. Enjoy the downtime!"
+		eventType = "oncall_shift_ended"
 	default:
 		message = "Unknown notification event"
 		eventType = "unknown"

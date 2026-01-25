@@ -10,7 +10,7 @@ import (
 
 // State represents the persisted on-call state
 type State struct {
-	WasOnCall                bool       `json:"was_on_call"`
+	WasOnCall                   bool       `json:"was_on_call"`
 	LastAdvanceNotificationSent *time.Time `json:"last_advance_notification_sent,omitempty"`
 }
 
@@ -70,6 +70,11 @@ func (m *Manager) Save(state *State) error {
 // HasTransitionToOnCall checks if there was a transition from not-on-call to on-call
 func (m *Manager) HasTransitionToOnCall(previousState *State, currentlyOnCall bool) bool {
 	return !previousState.WasOnCall && currentlyOnCall
+}
+
+// HasTransitionToOffCall checks if there was a transition from on-call to not-on-call
+func (m *Manager) HasTransitionToOffCall(previousState *State, currentlyOnCall bool) bool {
+	return previousState.WasOnCall && !currentlyOnCall
 }
 
 // ShouldSendAdvanceNotification checks if an advance notification should be sent

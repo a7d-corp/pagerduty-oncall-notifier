@@ -8,8 +8,9 @@ import (
 type NotificationEvent string
 
 const (
-	EventShiftStarted   NotificationEvent = "shift_started"
-	EventUpcomingShift  NotificationEvent = "upcoming_shift"
+	EventShiftStarted  NotificationEvent = "shift_started"
+	EventUpcomingShift NotificationEvent = "upcoming_shift"
+	EventShiftEnded    NotificationEvent = "shift_ended"
 )
 
 // Notifier defines the interface for notification backends
