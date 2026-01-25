@@ -19,21 +19,22 @@ const (
 
 // Config holds all configuration for the application
 type Config struct {
-	PagerDutyAPIToken       string
-	PagerDutyScheduleID     string
-	PagerDutyUserID         string
-	CheckInterval           time.Duration
-	AdvanceNotificationTime time.Duration
-	NotificationBackend     NotificationBackend
-	NotificationWebhookURL  string
-	NtfyServerURL           string
-	NtfyTopic               string
-	NtfyAPIKey              string
-	PushoverAppToken        string
-	PushoverUserKey         string
-	PushoverDevice          string
-	PushoverSound           string
-	StateFilePath           string
+	PagerDutyAPIToken            string
+	PagerDutyScheduleID          string
+	PagerDutyUserID              string
+	CheckInterval                time.Duration
+	AdvanceNotificationTime      time.Duration
+	ShiftEndNotificationsEnabled bool
+	NotificationBackend          NotificationBackend
+	NotificationWebhookURL       string
+	NtfyServerURL                string
+	NtfyTopic                    string
+	NtfyAPIKey                   string
+	PushoverAppToken             string
+	PushoverUserKey              string
+	PushoverDevice               string
+	PushoverSound                string
+	StateFilePath                string
 }
 
 // Load loads configuration from environment variables
@@ -128,6 +129,16 @@ func Load() (*Config, error) {
 		}
 		cfg.AdvanceNotificationTime = advanceTime
 		log.Printf("Advance notification time: %v", advanceTime)
+	}
+
+	// Optional: Shift End Notifications Enabled (default: true)
+	cfg.ShiftEndNotificationsEnabled = true
+	if shiftEndEnabledStr := os.Getenv("SHIFT_END_NOTIFICATIONS_ENABLED"); shiftEndEnabledStr != "" {
+		enabled, err := strconv.ParseBool(shiftEndEnabledStr)
+		if err != nil {
+			return nil, fmt.Errorf("SHIFT_END_NOTIFICATIONS_ENABLED must be a boolean (true/false): %w", err)
+		}
+		cfg.ShiftEndNotificationsEnabled = enabled
 	}
 
 	// Optional: State File Path (default: /data/state.json)

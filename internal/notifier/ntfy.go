@@ -60,6 +60,11 @@ func (n *NtfyNotifier) NotifyWithEvent(event NotificationEvent, shiftStartTime t
 		title = "PagerDuty On-Call Shift Upcoming"
 		priority = "default"
 		tags = "alarm_clock,clock1"
+	case EventShiftEnded:
+		message = "✅ Your PagerDuty on-call shift has ended. Enjoy the downtime!"
+		title = "PagerDuty On-Call Shift Ended"
+		priority = "default"
+		tags = "white_check_mark,beach_with_umbrella"
 	default:
 		message = "Unknown notification event"
 		title = "PagerDuty Notification"

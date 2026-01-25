@@ -65,6 +65,10 @@ func (p *PushoverNotifier) NotifyWithEvent(event NotificationEvent, shiftStartTi
 		}
 		title = "PagerDuty On-Call Shift Upcoming"
 		priority = "0"
+	case EventShiftEnded:
+		message = "✅ Your PagerDuty on-call shift has ended. Enjoy the downtime!"
+		title = "PagerDuty On-Call Shift Ended"
+		priority = "0"
 	default:
 		message = "Unknown notification event"
 		title = "PagerDuty Notification"

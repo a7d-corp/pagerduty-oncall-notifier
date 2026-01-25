@@ -1,11 +1,12 @@
 # PagerDuty On-Call Notifier
 
-A lightweight Go-based service that monitors PagerDuty on-call rotations and sends notifications when your shift starts. The notification system is modular to support multiple platforms (currently webhook and ntfy, easily extensible).
+A lightweight Go-based service that monitors PagerDuty on-call rotations and sends notifications when your shift starts or ends. The notification system is modular to support multiple platforms (currently webhook and ntfy, easily extensible).
 
 ## Features
 
 - Polls PagerDuty API at configurable intervals (default: 5 minutes)
 - Detects when your on-call shift starts (transition from not-on-call to on-call)
+- Sends a confirmation notification when your shift ends (transition from on-call to off-call)
 - **NEW**: Configurable advance notifications before your shift starts (e.g., notify 2 hours in advance)
 - Supports multiple notification backends: webhook, ntfy (self-hosted), and Pushover
 - Optional authentication for ntfy servers (API key)
@@ -44,6 +45,9 @@ The application consists of:
 | `CHECK_INTERVAL` | No | `300` | Polling interval in seconds (default: 5 minutes) |
 | `ADVANCE_NOTIFICATION_TIME` | No | - | Time before shift to send advance notification (e.g., "2h", "30m", "1h30m"). Disabled if not set |
 | `STATE_FILE_PATH` | No | `/data/state.json` | Path to state persistence file |
+| `SHIFT_END_NOTIFICATIONS_ENABLED` | No | `true` | Set to `false` to globally opt out of shift-end notifications |
+
+If you prefer to suppress the end-of-shift reminder, set `SHIFT_END_NOTIFICATIONS_ENABLED=false` in your environment.
 
 #### Notification Backend Selection
 
@@ -318,6 +322,18 @@ When advance notification is enabled and your upcoming shift is within the confi
 }
 ```
 
+#### Shift End Notification
+
+When your shift ends, the webhook receives:
+
+```json
+{
+  "message": "✅ Your PagerDuty on-call shift has ended. Enjoy the downtime!",
+  "timestamp": "2024-01-15T18:30:00Z",
+  "event": "oncall_shift_ended"
+}
+```
+
 ### Ntfy Backend
 
 When your shift starts, the ntfy server receives a POST request to `{NTFY_SERVER_URL}/{NTFY_TOPIC}` with:
@@ -342,6 +358,14 @@ When advance notification is enabled and your upcoming shift is within the confi
 
 The notification will appear on any device subscribed to the topic. For more information about ntfy, see the [ntfy documentation](https://docs.ntfy.sh/).
 
+#### Shift End Notification
+
+- **Message Body**: `✅ Your PagerDuty on-call shift has ended. Enjoy the downtime!`
+- **Headers**:
+  - `Title`: "PagerDuty On-Call Shift Ended"
+  - `Priority`: "default"
+  - `Tags`: "white_check_mark,beach_with_umbrella"
+
 #### Ntfy Authentication
 
 If your self-hosted ntfy server requires authentication, you can provide an API key via the `NTFY_API_KEY` environment variable. The notifier will include this as a Bearer token in the `Authorization` header. For details on setting up access tokens, see the [ntfy authentication documentation](https://docs.ntfy.sh/publish/#access-tokens).
@@ -365,6 +389,14 @@ Advance notifications send the same API request with:
 - `priority`: `0` (normal priority)
 
 Errors returned by the API (non-2xx statuses) are logged, and the response body is included to aid debugging.
+
+#### Shift End Notification
+
+A shift-end alert is sent with:
+
+- `title`: "PagerDuty On-Call Shift Ended"
+- `message`: `✅ Your PagerDuty on-call shift has ended. Enjoy the downtime!`
+- `priority`: `0`
 
 ## State Persistence
 

@@ -28,6 +28,7 @@ func main() {
 		fmt.Fprintln(flag.CommandLine.Output(), "  NOTIFICATION_BACKEND           webhook | ntfy | pushover")
 		fmt.Fprintln(flag.CommandLine.Output(), "  CHECK_INTERVAL                 poll interval in seconds (default 300)")
 		fmt.Fprintln(flag.CommandLine.Output(), "  ADVANCE_NOTIFICATION_TIME      duration before shift for advance alerts")
+		fmt.Fprintln(flag.CommandLine.Output(), "  SHIFT_END_NOTIFICATIONS_ENABLED enable/disable shift end alerts (default true)")
 		fmt.Fprintln(flag.CommandLine.Output(), "  STATE_FILE_PATH                path for persisted state (default /data/state.json)")
 		fmt.Fprintln(flag.CommandLine.Output(), "\nSee README.md for full configuration details.")
 	}
@@ -52,6 +53,7 @@ func main() {
 	log.Printf("User ID: %s", cfg.PagerDutyUserID)
 	log.Printf("Check interval: %v", cfg.CheckInterval)
 	log.Printf("Notification backend: %s", cfg.NotificationBackend)
+	log.Printf("Shift end notifications enabled: %v", cfg.ShiftEndNotificationsEnabled)
 
 	// Initialize components
 	pdClient := pagerduty.NewClient(
@@ -228,6 +230,19 @@ func runPollingLoop(
 					// Continue even if notification fails
 				} else {
 					log.Println("Shift started notification sent successfully")
+				}
+			}
+
+			// Check for transition off on-call (shift ended)
+			if cfg.ShiftEndNotificationsEnabled && stateManager.HasTransitionToOffCall(currentState, isOnCall) {
+				log.Printf("Shift ended. Sending notifier...")
+
+				event := notifier.EventShiftEnded
+				if err := n.NotifyWithEvent(event, time.Now().UTC()); err != nil {
+					log.Printf("Failed to send shift ended notification: %v", err)
+					// Continue even if notification fails
+				} else {
+					log.Println("Shift ended notification sent successfully")
 				}
 			}
 
