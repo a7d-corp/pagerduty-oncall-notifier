@@ -10,3 +10,4 @@ All notable changes to this project will be documented in this file.
 - Added a CLI help flag (`-h`/`--help`) that prints usage details and key environment variables.
 - Added end-of-shift notifications that fire when PagerDuty reports you are off call, with full support across webhook, ntfy, and Pushover backends.
 - Added the `SHIFT_END_NOTIFICATIONS_ENABLED` environment variable to globally enable or disable the shift-end notifier.
+- Added unit tests covering the state manager and ntfy notifier to ensure persistence, transition detection, and HTTP interactions remain stable.
